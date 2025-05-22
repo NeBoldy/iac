@@ -1,7 +1,7 @@
-account_service_sql_dump          = "http://reports.legitscript.com/dev_files/account-service-2023.sql.gz"
-skip_final_snapshot               = true
+         account_service_sql_dump          = "http://reports.legitscript.com/dev_files/account-service-2023.sql.gz"
+     skip_final_snapshot               = true
 deletion_protection               = false
-create_cross_region_replica       = false
+   create_cross_region_replica       = false
    instance_type                     = "db.r5.large" # smallest instance that works with Aurora-Global
 instance_count                    = 2
 auth0_repo_version                = "v0.15.0"

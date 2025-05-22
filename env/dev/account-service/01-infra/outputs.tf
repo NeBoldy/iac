@@ -27,3 +27,7 @@ output "user_update_sns_topic_name" {
   description = "SNS topic name for Merchant Monitoring user update"
   value       = module.sns.user_update_sns_topic_name
 }
+
+output "test" {
+  values   = "test"
+}

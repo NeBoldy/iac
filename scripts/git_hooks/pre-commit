@@ -29,7 +29,7 @@ fi
 
 # Update README in all changed module directories
 # Greps all changed tf files in the modules dir, then gets the list of directory paths, sorts them and keeps only unique ones
-module_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^terraform/modules/.+\.tf$' | xargs -n1 dirname | sort -u)
+module_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^modules/.+\.tf$' | xargs -n1 dirname | sort -u)
 for dir in $module_dirs; do
     # compgen checks if the glob pattern matches any files
     if compgen -G "$dir/*.tf" > /dev/null; then
@@ -40,7 +40,7 @@ done
 
 # Update README in all changed env/service directories
 # Greps all changed tf,tfvars,hcl files in the services dir, then gets the list of directory paths, sorts them and keeps only unique ones
-service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^terraform/env/.+\.tf$|^terraform/env/.+\.tfvars$|^terraform/env/.+terragrunt\.hcl$' | xargs -n1 dirname | sort -u)
+service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^env/.+\.tf$|^env/.+\.tfvars$|^env/.+terragrunt\.hcl$' | xargs -n1 dirname | sort -u)
 for dir in $service_dirs; do
     readme="$dir/README.md"
     # If README.md is a symlink, skip it (it will be handled by the module README update)

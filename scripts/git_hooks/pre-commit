@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+exit_code=0
+# Format Terraform and Terragrunt files
+# This will format all staged files that are *.tf, *.tfvars, or terragrunt.hcl
+
+# Do we have terraform and terragrunt installed?
+if [[ -x "$(command -v terraform)" || -x "$(command -v terragrunt)" ]]; then
+    # --diff-filter=ACM tells git diff to only show files that are Added, Copied, or Modified in your current staged changes
+    for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(\.tf$|\.tfvars$|terragrunt\.hcl$)'); do
+    # Format Terraform files
+    if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
+        terraform fmt "$file" || exit_code=1
+    # Format Terragrunt files
+    elif [[ "$file" == *terragrunt.hcl ]]; then
+        terragrunt hclfmt "$file" || exit_code=1
+    fi
+    done
+fi
+
+# Update/generate Terraform docs
+
+# Update README in all changed module directories
+# Greps all changed tf files in the modules dir, then gets the list of directory paths, sorts them and keeps only unique ones
+module_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^terraform/modules/.+\.tf$' | xargs -n1 dirname | sort -u)
+for dir in $module_dirs; do
+    # compgen checks if the glob pattern matches any files
+    if compgen -G "$dir/*.tf" > /dev/null; then
+        echo "Updating Terraform docs in $dir/README.md"
+        terraform-docs markdown --output-file "$dir/README.md" --output-mode inject "$dir" || exit_code=1
+    fi
+done
+
+# Update README in all changed env/service directories
+# Greps all changed tf,tfvars,hcl files in the services dir, then gets the list of directory paths, sorts them and keeps only unique ones
+service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^terraform/env/.+\.tf$|^terraform/env/.+\.tfvars$|^terraform/env/.+terragrunt\.hcl$' | xargs -n1 dirname | sort -u)
+for dir in $service_dirs; do
+    readme="$dir/README.md"
+    # If README.md is a symlink, skip it (it will be handled by the module README update)
+    if [[ -L "$readme" ]]; then
+        echo "Skipping $readme (it's a symlink to module README)"
+        continue
+    fi
+    if compgen -G "$dir/*.tf" > /dev/null; then
+        echo "Updating Terraform docs in $dir/README.md"
+        terraform-docs markdown --output-file "$dir/README.md" --output-mode inject "$dir" || exit_code=1
+    fi
+done
+
+exit $exit_code

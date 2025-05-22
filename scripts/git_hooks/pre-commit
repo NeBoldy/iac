@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
+echo "==[DEBUG]== Files staged for commit:"
+git diff --cached --name-only
+echo "======================"
 
+echo "Service dirs: $service_dirs"
+echo "Module dirs: $module_dirs"
+
+set -x
 exit_code=0
 # Format Terraform and Terragrunt files
 # This will format all staged files that are *.tf, *.tfvars, or terragrunt.hcl

@@ -100,11 +100,6 @@ aws.replica = aws.replica
   auth0_api_token              = module.account_service_connection.account_service_auth0_api_token 
 }
 
-module "sns" {
-  source = "../../../../modules/applications/account-service/sns"
-
-  stage = var.stage
-}
 
 # IAM
 module "iam" {

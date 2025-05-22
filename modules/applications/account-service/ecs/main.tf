@@ -1,0 +1,29 @@
+provider "aws" {
+  region              = var.aws_region
+  allowed_account_ids = [var.aws_account_id]
+}
+
+provider "aws" {
+  alias               = "target_provider"
+  region              = var.aws_region
+
+}
+
+locals {
+  tags = {
+    "Team" : "Skeletor",
+    "Region" : var.aws_region,
+    "Environment" : var.environment,
+    "CostCenter" : "Development",
+    "Service" : "Data Lake",
+    "Stage" : var.stage
+  }
+}
+
+module "data_lake" {
+  source         = "../../../modules/aws/s3/data_lake"
+  tags           = local.tags
+  environment    = var.environment
+  aws_region     = var.aws_region
+  aws_account_id = var.aws_account_id
+}

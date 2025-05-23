@@ -31,10 +31,11 @@ fi
 # Greps all changed tf files in the modules dir, then gets the list of directory paths, sorts them and keeps only unique ones
 module_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^modules/.+\.tf$' | xargs -n1 dirname | sort -u)
 for dir in $module_dirs; do
+    readme="$dir/README.md"
     # compgen checks if the glob pattern matches any files
     if compgen -G "$dir/*.tf" > /dev/null; then
-        echo "Updating Terraform docs in $dir/README.md"
-        terraform-docs markdown --output-file "$dir/README.md" --output-mode inject "$dir" || exit_code=1
+        echo "Updating Terraform docs in $readme"
+        (cd "$dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
     fi
 done
 
@@ -50,7 +51,7 @@ for dir in $service_dirs; do
     fi
     if compgen -G "$dir/*.tf" > /dev/null; then
         echo "Updating Terraform docs in $dir/README.md"
-        terraform-docs markdown --output-file "$dir/README.md" --output-mode inject "$dir" || exit_code=1
+        (cd "$dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
     fi
 done
 

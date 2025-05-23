@@ -1,0 +1,19 @@
+variable "aws_region" {
+  type        = string
+  description = "The AWS region to deploy to."
+}
+
+variable "environment" {
+  type        = string
+  description = "The environment being deployed to"
+}
+
+variable "aws_account_id" {
+  type        = string
+  description = "The AWS account to deploy to."
+}
+
+variable "stage" {
+  type        = string
+  description = "The stage being deployed to."
+}

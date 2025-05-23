@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+export PATH=$PATH:/usr/local/bin
+set -x
 echo "==[DEBUG]== Files staged for commit:"
 git diff --cached --name-only
 echo "======================"
@@ -44,7 +46,6 @@ done
 service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^env/.+\.tf$|^env/.+\.tfvars$|^env/.+terragrunt\.hcl$' | xargs -n1 dirname | sort -u)
 for dir in $service_dirs; do
     readme="$dir/README.md"
-    # If README.md is a symlink, skip it (it will be handled by the module README update)
     if [[ -L "$readme" ]]; then
         echo "Skipping $readme (it's a symlink to module README)"
         continue

@@ -27,3 +27,7 @@ module "blackridge_monitoring" {
   topic_arn          = data.aws_ssm_parameter.skeletor_topic_arn.value
   subscription_email = local.subscription_email
 }
+
+data "aws_ssm_parameter" "skeletor_topic_arn" {
+  name = "/devops/blackridge/skeletor/topic_arn"
+}

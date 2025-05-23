@@ -16,12 +16,12 @@ if [[ -x "$(command -v terraform)" || -x "$(command -v terragrunt)" ]]; then
     # --diff-filter=ACM tells git diff to only show files that are Added, Copied, or Modified in your current staged changes
     for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(\.tf$|\.tfvars$|terragrunt\.hcl$)'); do
     # Format Terraform files
-    if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
-        terraform fmt "$file" || exit_code=1
-    # Format Terragrunt files
-    elif [[ "$file" == *terragrunt.hcl ]]; then
-        terragrunt hclfmt "$file" || exit_code=1
-    fi
+        if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
+            terraform fmt "$file" || exit_code=1
+        # Format Terragrunt files
+        elif [[ "$file" == *terragrunt.hcl ]]; then
+            terragrunt hclfmt "$file" || exit_code=1
+        fi
     done
 fi
 

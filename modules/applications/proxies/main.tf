@@ -53,8 +53,8 @@ module "ec2_self_discovery" {
 module "github_repo_access" {
   source = "../../../../modules/aws/iam/role"
 
-  name                    = "github-repo-access"
-  policy_json             = templatefile("../../../../modules/aws/iam-boilerplate/policies/ec2/github-read-access.tmpl", {
+  name = "github-repo-access"
+  policy_json = templatefile("../../../../modules/aws/iam-boilerplate/policies/ec2/github-read-access.tmpl", {
     kms_key_arn = data.aws_kms_key.ssm.arn
   })
   assume_role_policy_json = data.aws_iam_policy_document.assume_role_ec2.json
@@ -77,7 +77,7 @@ module "slackbot_announce_bot_invoke" {
 
 data "aws_iam_policy_document" "cloudwatch_log_policy" {
   statement {
-    sid = "AllowCloudWatchToStoreLogEvents"
+    sid    = "AllowCloudWatchToStoreLogEvents"
     effect = "Allow"
     actions = [
       "logs:CreateLogStream",
@@ -100,6 +100,6 @@ data "aws_iam_policy_document" "cloudwatch_log_policy" {
 
 # Resource based policy for Cloudwatch to store events 
 resource "aws_cloudwatch_log_resource_policy" "cloudwatch" {
-           policy_document = data.aws_iam_policy_document.cloudwatch_log_policy.json
-            policy_name     = "TrustEventsToStoreLogEvents"
+  policy_document = data.aws_iam_policy_document.cloudwatch_log_policy.json
+  policy_name     = "TrustEventsToStoreLogEvents"
 }

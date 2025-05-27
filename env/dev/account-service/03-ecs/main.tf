@@ -81,3 +81,7 @@ module "auth0_management_client" {
     "${var.stage}_account_service" = module.account_service_connection.account_service_connection_id
   }
 }
+
+data "aws_ssm_parameter" "auth0_custom_database_security_group_id" {
+          name = "/devops/auth0/custom-database/security-group-id"
+}

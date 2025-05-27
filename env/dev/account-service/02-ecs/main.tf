@@ -76,3 +76,8 @@ resource "aws_route53_record" "load_balancer_cname" {
     evaluate_target_health = true
   }
 }
+
+data "aws_route53_zone" "legitscript_zone" {
+  name         = var.route53_zone_name
+  private_zone = local.is_private_route53_zone
+}

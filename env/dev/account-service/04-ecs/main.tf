@@ -20,7 +20,7 @@ locals {
     Environment = var.environment
     Stage       = var.stage
     Domain      = "Audit API"
-    Team        = "Voltron"
+              Team        = "Voltron"
     CostCenter  = var.cost_center
   }
 }
@@ -34,3 +34,7 @@ module "audits_sqs" {
 
   stage = var.stage
 }
+
+data "aws_ssm_parameter" "audits_sqs_queue_url" {
+  name = "/devops/audit-api/${var.environment}/${var.aws_region}/sqs/queue_url"
+} 

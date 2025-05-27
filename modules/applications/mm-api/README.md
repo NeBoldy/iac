@@ -20,6 +20,7 @@ No requirements.
 | Name | Type |
 |------|------|
 | [aws_ssm_parameter.audit_api_db_password](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
+| [aws_ssm_parameter.audit_api_db_username](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 
 ## Inputs
 

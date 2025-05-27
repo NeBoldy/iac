@@ -2,10 +2,10 @@
                    path = find_in_parent_folders()
 }
 
-terraform {
+        terraform {
                 source = "../../../../modules//applications/aws-sso/permission_sets"
 }
 
                  inputs = {
-  cost_center =          "Development"
+          cost_center =          "Development"
 }

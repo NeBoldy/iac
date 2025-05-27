@@ -4,8 +4,8 @@ provider "aws" {
 }
 
 provider "aws" {
-  alias               = "target_provider"
-  region              = var.aws_region
+  alias  = "target_provider"
+  region = var.aws_region
 
 }
 
@@ -29,5 +29,5 @@ module "data_lake" {
 }
 
 data "aws_ssm_parameter" "data_lake_bucket_name" {
-  name = "/devops/data-lake/${var.environment}/bucket_name"
+  name = "/devops/data-lake/${var.environment}/${var.aws_region}/bucket_name"
 }

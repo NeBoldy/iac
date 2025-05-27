@@ -5,7 +5,7 @@ exit_code=0
 # This will format all staged files that match *.tf, *.tfvars, or terragrunt.hcl patterns.
 
 # Do we have terraform and terragrunt installed?
-if [[ -x "$(command -v terraform)" && -x "$(command -v terragrunt)" ]]; then
+if ! command -v terraform >/dev/null || ! command -v terragrunt >/dev/null; then
     echo "Error: Both terraform and terragrunt must be installed." >&2
     exit 1
 fi
@@ -27,17 +27,19 @@ if [[ -x "$(command -v terraform-docs)" ]]; then
     for dir in $service_dirs; do
         # Case insensitive check for README.md
         readme=$(find . -iname readme.md)
-        # Check if README.md is a symlink to a module folder's README.md
-        if [[ -L "$readme" ]]; then
-            real_readme=$(realpath "$readme")
-            module_dir=$(dirname "$real_readme")
-            echo "Service README is a symlink, updating module's README.md at $real_readme"
-            # compgen -G "$dir/*.tf" checks for existence of any Terraform (*.tf) files in $dir
-            if compgen -G "$module_dir/*.tf" > /dev/null; then
-                (cd "$module_dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
+        for file in $readme; do
+            # Check if README.md is a symlink to a module folder's README.md
+            if [[ -L "$readme" ]]; then
+                real_readme=$(realpath "$readme")
+                module_dir=$(dirname "$real_readme")
+                echo "Service README is a symlink, updating module's README.md at $real_readme"
+                # compgen -G "$dir/*.tf" checks for existence of any Terraform (*.tf) files in $dir
+                if compgen -G "$module_dir/*.tf" > /dev/null; then
+                    (cd "$module_dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
+                fi
+                continue
             fi
-            continue
-        fi
+        done
         # Otherwise update the service folder's README.md file
         if compgen -G "$dir/*.tf" > /dev/null; then
             echo "Updating Terraform docs in $dir/README.md"

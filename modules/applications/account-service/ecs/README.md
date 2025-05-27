@@ -22,6 +22,7 @@ No requirements.
 
 | Name | Type |
 |------|------|
+| [aws_ssm_parameter.data_lake_bucket_arn](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 | [aws_ssm_parameter.data_lake_bucket_name](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
 
 ## Inputs

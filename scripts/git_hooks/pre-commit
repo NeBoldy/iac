@@ -5,28 +5,25 @@ exit_code=0
 # This will format all staged files that match *.tf, *.tfvars, or terragrunt.hcl patterns.
 
 # Do we have terraform and terragrunt installed?
-if ! command -v terraform >/dev/null || ! command -v terragrunt >/dev/null; then
-    echo "Both terraform and terragrunt must be both installed." >&2
-    exit 1
+if [[ -x "$(command -v terraform)" && -x "$(command -v terragrunt)" ]]; then
+    for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(\.tf$|\.tfvars$|terragrunt\.hcl$)'); do
+        if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
+            terraform fmt "$file" || exit_code=1
+        elif [[ "$file" == *terragrunt.hcl ]]; then
+            terragrunt hclfmt "$file" || exit_code=1
+        fi
+    done
 fi
-
-for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(\.tf$|\.tfvars$|terragrunt\.hcl$)'); do
-    if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
-        terraform fmt "$file" || exit_code=1
-    elif [[ "$file" == *terragrunt.hcl ]]; then
-        terragrunt hclfmt "$file" || exit_code=1
-    fi
-done
 
 # Update/generate Terraform docs
 
 # Find all staged TF, TFVARS, HCL file changes
 service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^env/.+\.tf$|^env/.+\.tfvars$' | xargs -n1 dirname)
 # Check if terraform-docs is installed
-if command -v terraform-docs >/dev/null; then
+if [[ -x "$(command -v terraform-docs)" ]]; then
     for dir in $service_dirs; do
         # Case insensitive check for README.md
-        readme=$(find "$dir" -maxdepth 1 -iname readme.md)
+        readme=$(find "$dir" -iname readme.md)
         for file in $readme; do
             # Check if README.md is a symlink to a module folder's README.md
             if [[ -L "$readme" ]]; then
@@ -50,7 +47,7 @@ if command -v terraform-docs >/dev/null; then
     # Find all staged module folder's TF file changes
     module_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^modules/.+\.tf$' | xargs -n1 dirname) 
     for dir in $module_dirs; do
-        readme=$(find "$dir" -maxdepth 1 -iname readme.md)
+        readme=$(find "$dir" -iname readme.md)
         for file in $readme; do
             # compgen -G "$dir/*.tf" checks for existence of any Terraform (*.tf) files in $dir
             if compgen -G "$dir/*.tf" > /dev/null; then

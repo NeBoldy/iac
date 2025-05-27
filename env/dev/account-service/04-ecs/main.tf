@@ -20,7 +20,7 @@ locals {
     Environment = var.environment
     Stage       = var.stage
     Domain      = "Audit API"
-              Team        = "Voltron"
+    Team        = "Voltron"
     CostCenter  = var.cost_center
   }
 }

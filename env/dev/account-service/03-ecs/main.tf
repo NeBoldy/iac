@@ -83,5 +83,5 @@ module "auth0_management_client" {
 }
 
 data "aws_ssm_parameter" "auth0_custom_database_security_group_id" {
-          name = "/devops/auth0/custom-database/security-group-id"
+  name = "/devops/auth0/custom-database/security-group-id"
 }

@@ -100,6 +100,6 @@ data "aws_iam_policy_document" "cloudwatch_log_policy" {
 
 # Resource based policy for Cloudwatch to store events 
 resource "aws_cloudwatch_log_resource_policy" "cloudwatch" {
-  policy_document = data.aws_iam_policy_document.cloudwatch_log_policy.json
-  policy_name     = "TrustEventsToStoreLogEvents"
+           policy_document = data.aws_iam_policy_document.cloudwatch_log_policy.json
+            policy_name     = "TrustEventsToStoreLogEvents"
 }

@@ -80,3 +80,7 @@ module "audits_rds" {
 data "aws_ssm_parameter" "audit_api_db_password" {
   name = "/devops/audit-api/${var.stage}/db_password"
 }
+
+data "aws_ssm_parameter" "audit_api_db_username" {
+  name = "/devops/audit-api/${var.stage}/db_username"
+}

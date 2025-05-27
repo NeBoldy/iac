@@ -44,15 +44,17 @@ module "ecs" {
     data.aws_cloudformation_export.legitscript_public_subnet_3.value,
   ]
   vpc_id                         = data.aws_cloudformation_export.legitscript_vpc_id.value
-             account_service_security_group = data.aws_cloudformation_export.account_service_sg.value
+  account_service_security_group = data.aws_cloudformation_export.account_service_sg.value
   acm_cert_domain_name           = local.domain_name
 
-          kms_key_arn                   = data.aws_kms_alias.applications.target_key_arn
+  kms_key_arn = data.aws_kms_alias.applications.target_key_arn
+
+
   additional_security_group_ids = [data.aws_ssm_parameter.auth0_custom_database_security_group_id.value]
 
   account_service_auth0_api_token = data.aws_ssm_parameter.account_service_auth0_api_token.value
 
-           vpn_ips                = var.vpn_ips
+  vpn_ips                = var.vpn_ips
   public_ips_for_ingress = var.public_ips_for_ingress
 
   # TEMP for auth0 mfa testing
@@ -60,24 +62,37 @@ module "ecs" {
   max_num_tasks = 1
 
   # vCPU and Memory for the ECS Task
+
+
+
   cpu_units  = var.cpu_units
-             memory_mbs = var.memory_mbs
+  memory_mbs = var.memory_mbs
 }
 
-          resource "aws_route53_record" "load_balancer_cname" {
-  
-  
+resource "aws_route53_record" "load_balancer_cname" {
+
+
   zone_id = data.aws_route53_zone.legitscript_zone.zone_id
 
-  
-  
+
+
   name = local.domain_name
   type = "A"
 
   alias {
-         name                   = module.ecs.load_balancer_dns_name
-            zone_id                = module.ecs.load_balancer_hosted_zone_id
-       
-       evaluate_target_health = true
+    name    = module.ecs.load_balancer_dns_name
+    zone_id = module.ecs.load_balancer_hosted_zone_id
+
+    evaluate_target_health = true
   }
+}
+
+
+data "aws_route53_zone" "legitscript_zone" {
+  name         = "legitscript.com"
+  private_zone = local.is_private_route53_zone
+}
+
+data "aws_cloudformation_export" "legitscript_private_subnet_1" {
+  name = "LegitScriptPrivateSubnet1"
 }

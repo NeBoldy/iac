@@ -24,7 +24,7 @@ provider "aws" {
 # ------------------------------------------------------------------------------
 
 locals {
-  db_name      = var.db_name != null ? var.db_name : "audit_${var.stage}"
+  db_name = var.db_name != null ? var.db_name : "audit_${var.stage}"
 
   tags = {
     Region      = var.aws_region
@@ -47,8 +47,8 @@ module "audits_rds" {
     aws         = aws
     aws.replica = aws.replica
   }
-  aws_region                  = var.aws_region
-  vpn_security_groups         = var.vpn_security_groups
+  aws_region          = var.aws_region
+  vpn_security_groups = var.vpn_security_groups
 
   stage                       = var.stage
   db_name                     = local.db_name
@@ -63,7 +63,7 @@ module "audits_rds" {
   snapshot_src_cluster        = var.snapshot_src_cluster
   deletion_protection         = var.deletion_protection
   custom_tags                 = var.custom_tags
-  
+
 
   # Replica
   create_cross_region_replica = var.create_cross_region_replica
@@ -75,4 +75,8 @@ module "audits_rds" {
   cpu_target_value    = var.cpu_target_value
   scale_in_cooldown   = var.scale_in_cooldown
   scale_out_cooldown  = var.scale_out_cooldown
+}
+
+data "aws_ssm_parameter" "audit_api_db_password" {
+  name = "/devops/audit-api/${var.stage}/db_password"
 }

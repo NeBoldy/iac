@@ -1,26 +1,14 @@
 #!/usr/bin/env bash
-export PATH=$PATH:/usr/local/bin
-set -x
-echo "==[DEBUG]== Files staged for commit:"
-git diff --cached --name-only
-echo "======================"
-
-echo "Service dirs: $service_dirs"
-echo "Module dirs: $module_dirs"
-
-set -x
+set -e
 exit_code=0
 # Format Terraform and Terragrunt files
-# This will format all staged files that are *.tf, *.tfvars, or terragrunt.hcl
+# This will format all staged files that match *.tf, *.tfvars, or terragrunt.hcl patterns.
 
 # Do we have terraform and terragrunt installed?
 if [[ -x "$(command -v terraform)" || -x "$(command -v terragrunt)" ]]; then
-    # --diff-filter=ACM tells git diff to only show files that are Added, Copied, or Modified in your current staged changes
     for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(\.tf$|\.tfvars$|terragrunt\.hcl$)'); do
-    # Format Terraform files
         if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
             terraform fmt "$file" || exit_code=1
-        # Format Terragrunt files
         elif [[ "$file" == *terragrunt.hcl ]]; then
             terragrunt hclfmt "$file" || exit_code=1
         fi
@@ -29,29 +17,37 @@ fi
 
 # Update/generate Terraform docs
 
-# Update README in all changed module directories
-# Greps all changed tf files in the modules dir, then gets the list of directory paths, sorts them and keeps only unique ones
-module_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^modules/.+\.tf$' | xargs -n1 dirname | sort -u)
+# Find all staged TF, TFVARS, HCL file changes
+service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^env/.+\.tf$|^env/.+\.tfvars$' | xargs -n1 dirname)
+# Check if terraform-docs is installed
+if [[ -x "$(command -v terraform-docs)" ]]; then
+    for dir in $service_dirs; do
+        readme="$dir/README.md"
+        # Check if README.md is a symlink to a module folder's README.md
+        if [[ -L "$readme" ]]; then
+            real_readme=$(realpath "$readme")
+            module_dir=$(dirname "$real_readme")
+            echo "Service README is a symlink, updating module's README.md at $real_readme"
+            # compgen -G "$dir/*.tf" checks for existence of any Terraform (*.tf) files in $dir
+            if compgen -G "$module_dir/*.tf" > /dev/null; then
+                (cd "$module_dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
+            fi
+            continue
+        fi
+        # Otherwise update the service folder's README.md file
+        if compgen -G "$dir/*.tf" > /dev/null; then
+            echo "Updating Terraform docs in $dir/README.md"
+            (cd "$dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
+        fi
+    done
+fi
+# Find all staged module folder's TF file changes
+module_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^modules/.+\.tf$' | xargs -n1 dirname) 
 for dir in $module_dirs; do
     readme="$dir/README.md"
-    # compgen checks if the glob pattern matches any files
+    # compgen -G "$dir/*.tf" checks for existence of any Terraform (*.tf) files in $dir
     if compgen -G "$dir/*.tf" > /dev/null; then
-        echo "Updating Terraform docs in $readme"
-        (cd "$dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
-    fi
-done
-
-# Update README in all changed env/service directories
-# Greps all changed tf,tfvars,hcl files in the services dir, then gets the list of directory paths, sorts them and keeps only unique ones
-service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^env/.+\.tf$|^env/.+\.tfvars$|^env/.+terragrunt\.hcl$' | xargs -n1 dirname | sort -u)
-for dir in $service_dirs; do
-    readme="$dir/README.md"
-    if [[ -L "$readme" ]]; then
-        echo "Skipping $readme (it's a symlink to module README)"
-        continue
-    fi
-    if compgen -G "$dir/*.tf" > /dev/null; then
-        echo "Updating Terraform docs in $dir/README.md"
+        echo "Updating Terraform docs in Module $dir/README.md"
         (cd "$dir" && terraform-docs markdown --output-file "README.md" --output-mode inject .) || exit_code=1
     fi
 done

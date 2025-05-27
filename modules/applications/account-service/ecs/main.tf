@@ -27,3 +27,7 @@ module "data_lake" {
   aws_region     = var.aws_region
   aws_account_id = var.aws_account_id
 }
+
+data "aws_ssm_parameter" "data_lake_bucket_name" {
+  name = "/devops/data-lake/${var.environment}/bucket_name"
+}

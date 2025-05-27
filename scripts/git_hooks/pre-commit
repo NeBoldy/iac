@@ -5,15 +5,18 @@ exit_code=0
 # This will format all staged files that match *.tf, *.tfvars, or terragrunt.hcl patterns.
 
 # Do we have terraform and terragrunt installed?
-if [[ -x "$(command -v terraform)" || -x "$(command -v terragrunt)" ]]; then
-    for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(\.tf$|\.tfvars$|terragrunt\.hcl$)'); do
-        if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
-            terraform fmt "$file" || exit_code=1
-        elif [[ "$file" == *terragrunt.hcl ]]; then
-            terragrunt hclfmt "$file" || exit_code=1
-        fi
-    done
+if [[ -x "$(command -v terraform)" && -x "$(command -v terragrunt)" ]]; then
+    echo "Error: Both terraform and terragrunt must be installed." >&2
+    exit 1
 fi
+
+for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(\.tf$|\.tfvars$|terragrunt\.hcl$)'); do
+    if [[ "$file" == *.tf || "$file" == *.tfvars ]]; then
+        terraform fmt "$file" || exit_code=1
+    elif [[ "$file" == *terragrunt.hcl ]]; then
+        terragrunt hclfmt "$file" || exit_code=1
+    fi
+done
 
 # Update/generate Terraform docs
 
@@ -22,7 +25,8 @@ service_dirs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^env/.
 # Check if terraform-docs is installed
 if [[ -x "$(command -v terraform-docs)" ]]; then
     for dir in $service_dirs; do
-        readme="$dir/README.md"
+        # Case insensitive check for README.md
+        readme=$(find . -iname readme.md)
         # Check if README.md is a symlink to a module folder's README.md
         if [[ -L "$readme" ]]; then
             real_readme=$(realpath "$readme")

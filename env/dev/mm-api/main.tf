@@ -96,3 +96,7 @@ data "aws_route53_zone" "legitscript_zone" {
 data "aws_cloudformation_export" "legitscript_private_subnet_1" {
   name = "LegitScriptPrivateSubnet1"
 }
+
+data "aws_cloudformation_export" "legitscript_private_subnet_2" {
+  name = "LegitScriptPrivateSubnet2"
+}

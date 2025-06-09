@@ -31,3 +31,7 @@ module "data_lake" {
 data "aws_ssm_parameter" "data_lake_bucket_name" {
   name = "/devops/data-lake/${var.environment}/${var.aws_region}/bucket_name"
 }
+
+data "aws_ssm_parameter" "cci_runner_id" {
+  name = "/devops/data-cci-runner/id"
+}

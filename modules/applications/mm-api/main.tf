@@ -65,19 +65,19 @@ module "audits_rds" {
   custom_tags                 = var.custom_tags
 
 
-  # Replica
+  # R eplica
   create_cross_region_replica = var.create_cross_region_replica
   replica_region              = var.replica_region
 
   # Autoscaling Configuration
-  min_number_replicas = var.min_number_replicas
+        min_number_replicas = var.min_number_replicas
   max_number_replicas = var.max_number_replicas
-  cpu_target_value    = var.cpu_target_value
+        cpu_target_value    = var.cpu_target_value
   scale_in_cooldown   = var.scale_in_cooldown
   scale_out_cooldown  = var.scale_out_cooldown
 }
 
-data "aws_ssm_parameter" "audit_api_db_password" {
+     data "aws_ssm_parameter" "audit_api_db_password" {
   name = "/devops/audit-api/${var.stage}/db_password"
 }
 

@@ -18,3 +18,8 @@ variable "aws_account_id" {
   type        = string
   description = "The AWS account to deploy to."
 }
+
+variable "cost_center" {
+  type        = string
+  description = "The cost center for the deployment."
+}

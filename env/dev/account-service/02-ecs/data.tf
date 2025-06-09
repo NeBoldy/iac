@@ -49,3 +49,7 @@ data "aws_ssm_parameter" "account_service_auth0_api_token" {
 data "aws_ssm_parameter" "auth0_custom_database_security_group_id" {
   name = "/auth0/${var.stage}/security_group/auth0_custom_database/id"
 }
+
+data "aws_ssm_parameter" "circleci_self_hosted_runner_security_group_id" {
+  name = "/circleci/self-hosted-runner/security_group/id"
+}

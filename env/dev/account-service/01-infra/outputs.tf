@@ -1,11 +1,3 @@
-output "cluster_endpoint" {
-       value = module.rds.cluster_endpoint
-}
-
-output "cluster_endpoint_replica" {
-  value = var.create_cross_region_replica ? module.rds[*].cluster_endpoint_replica : null
-}
-
 output "instance_endpoints" {
        value = module.rds.instance_endpoints
 }     

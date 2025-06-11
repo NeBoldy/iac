@@ -20,6 +20,12 @@ locals {
   }
 }
 
+module "bad_example" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "3.5.0"
+}
+
+
 module "data_lake" {
   source         = "../../../modules/aws/s3/data_lake"
   tags           = local.tags

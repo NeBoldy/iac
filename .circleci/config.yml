@@ -184,3 +184,7 @@ workflows:
       - run-tests:
           context:
             - devtest
+          filters:
+            branches:
+              only:
+                - main

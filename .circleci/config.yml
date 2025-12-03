@@ -1,0 +1,186 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@3.1.3
+  # ruby: circleci/ruby@2.1.1 # TODO: the 2.1.1 fix for 2.7.x got merged right as this was done; update this to use it instead of manual rbenv
+  ruby-tests: legitscript/ruby-tests@0.2.2
+  node: circleci/node@5.2.0
+  jq: circleci/jq@2.2.0
+  utils: legitscript/utils@0.1.0
+  terraform: legitscript/terraform@0.7.0
+
+
+parameters:
+  app_name:
+    type: string
+    default: "accounts"
+  ruby_version:
+    type: string
+    default: "2.7.8"
+  bundler_version:
+    type: string
+    default: "2.3.27"
+  node_version:
+    type: string
+    default: "20.11.0"
+  stage:
+    type: string
+    default: "development" # Override manually (in feature branch or CCI UI) if needed
+  environment:
+    type: string
+    default: "development" # Override manually (in feature branch or CCI UI) if needed
+  region:
+    type: string
+    default: "us-west-2"
+  debug:
+    type: string
+    default: 'false' # set to true to enable debug logging
+  extra_db_setup_commands:
+    type: string
+    default: "RAILS_ENV='test' bundle exec rails db:seed:auth0_service_account; RAILS_ENV='test' bundle exec rails db:seed:auth0_unassigned_data; export PORTAL_V2_KEY_HASH='$2a$10$SJXjmEtBPuBtlOg1t0o3XuRSwEMdsQkygFBM8NzVTk2l0LVNURZRe'"
+  extra_apt_packages:
+    type: string
+    default: ''
+  db_adapter:
+    type: string
+    default: 'mysql2'
+  db_port:
+    type: string
+    default: '3306'
+
+jobs:
+  plan-infrastructure:
+    machine: true
+    resource_class: legitscript/devtest
+    steps:
+      - checkout
+      - terraform/install:
+          terraform_version: 1.5.7
+      - terraform/fetch_configs
+      - terraform/init:
+          environment: << pipeline.parameters.environment >>
+          aws_region: << pipeline.parameters.region >>
+          stage: << pipeline.parameters.stage >>
+      - run:
+          name: Taint Infrastructure
+          command: |
+            bash ci/as-taint-auth0-git-clone.sh << pipeline.parameters.stage >> << pipeline.parameters.environment >> << pipeline.parameters.region >>
+      - terraform/plan:
+          environment: << pipeline.parameters.environment >>
+          aws_region: << pipeline.parameters.region >>
+          stage: << pipeline.parameters.stage >>
+
+  deploy-infrastructure:
+    machine: true
+    resource_class: legitscript/devtest
+    steps:
+      - checkout
+      - terraform/install:
+          terraform_version: 1.5.7
+      - terraform/fetch_configs
+      - terraform/init:
+          environment: << pipeline.parameters.environment >>
+          aws_region: << pipeline.parameters.region >>
+          stage: << pipeline.parameters.stage >>
+      - terraform/deploy:
+          environment: << pipeline.parameters.environment >>
+          aws_region: << pipeline.parameters.region >>
+          stage: << pipeline.parameters.stage >>
+
+  run-tests:
+    machine: true
+    resource_class: legitscript/devtest
+    steps:
+      - checkout
+      - aws-cli/setup
+      - jq/install
+      - aws-cli/role-arn-setup:
+          profile-name: circleci
+          role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/circleci-role"
+      - node/install:
+          node-version: << pipeline.parameters.node_version >>
+      - ruby-tests/install_ruby:
+          ruby_version: << pipeline.parameters.ruby_version >>
+      - ruby-tests/run_tests:
+          app_name: << pipeline.parameters.app_name >>
+          ruby_version: << pipeline.parameters.ruby_version >>
+          stage: << pipeline.parameters.stage >>
+          bundler_version: << pipeline.parameters.bundler_version >>
+          extra_apt_packages: << pipeline.parameters.extra_apt_packages >>
+          extra_db_setup_commands: << pipeline.parameters.extra_db_setup_commands >>
+          db_adapter: << pipeline.parameters.db_adapter >>
+          db_port: << pipeline.parameters.db_port >>
+  build:
+    machine:
+      image: ubuntu-2004:2022.10.1
+    steps:
+      - checkout
+      - utils/normalize-github-username
+      - aws-cli/setup
+      - aws-cli/role-arn-setup:
+          profile-name: circleci
+          role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/circleci-role"
+      - run:
+          name: Setup SSH key
+          command: |
+            mkdir -p ~/.ssh
+            chmod 700 ~/.ssh
+            aws ssm get-parameters --name github_ssh_key --with-decryption --query "Parameters[0].Value" --profile circleci | tr -d '"' | tr '_' '\n' > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+
+      - run:
+          name: "Build and push image"
+          command: |
+            export SSH_AUTH_SOCK=/tmp/ssh_agent.sock
+            ssh-agent -a "${SSH_AUTH_SOCK}"
+            ssh-add ~/.ssh/id_rsa
+            ECR_ENDPOINT="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+            aws ecr get-login-password --profile circleci | docker login \
+              --username AWS \
+              --password-stdin "${ECR_ENDPOINT}"
+            DOCKER_BUILDKIT=1 docker build \
+              --tag "${CIRCLE_PROJECT_REPONAME}" \
+              --file Dockerfile \
+              --target "ecs" \
+              --ssh default \
+              --progress plain \
+              .
+            # CIRCLE_SHA1 docker push
+            docker tag "${CIRCLE_PROJECT_REPONAME}" "${ECR_ENDPOINT}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
+            docker push "${ECR_ENDPOINT}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}"
+            # CIRCLE_BRANCH docker push
+            docker tag "${CIRCLE_PROJECT_REPONAME}" "${ECR_ENDPOINT}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BRANCH}"
+            docker push "${ECR_ENDPOINT}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BRANCH}"
+
+workflows:
+  plan-and-deploy-terraform-infrastructure:
+    jobs:
+      - plan-infrastructure:
+          context:
+            - devtest
+      - approve-infrastructure-deployment:
+          type: approval
+          requires:
+            - plan-infrastructure
+      - deploy-infrastructure:
+          context:
+            - devtest
+          requires:
+            - approve-infrastructure-deployment
+  build-and-push:
+    jobs:
+      - build:
+          name: ecr-build
+          context:
+            - services
+      - build:
+          name: production-build
+          context:
+            - services
+          requires:
+            - ecr-build
+  tests:
+    jobs:
+      - run-tests:
+          context:
+            - devtest

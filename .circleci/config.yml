@@ -91,6 +91,8 @@ jobs:
     machine: true
     resource_class: legitscript/devtest
     steps:
+      - <<: *set_friendly_git_ref
+      - <<: *set_source_ref
       - checkout
       - aws-cli/setup
       - jq/install

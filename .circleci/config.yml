@@ -152,6 +152,36 @@ jobs:
             docker tag "${CIRCLE_PROJECT_REPONAME}" "${ECR_ENDPOINT}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BRANCH}"
             docker push "${ECR_ENDPOINT}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BRANCH}"
 
+# Determine the user friendly Git Ref name of the build, either the branch or tag.
+set_friendly_git_ref: &set_friendly_git_ref
+  run:
+    name: set friendly git ref name
+    command: |
+      if [[ ! -z "$CIRCLE_TAG" ]]; then
+        echo 'export CIRCLE_FRIENDLY_REF="$CIRCLE_TAG"' >> $BASH_ENV
+      elif [[ ! -z "$CIRCLE_BRANCH" ]]; then
+        echo 'export CIRCLE_FRIENDLY_REF="$CIRCLE_BRANCH"' >> $BASH_ENV
+      else
+        echo 'export CIRCLE_FRIENDLY_REF="$CIRCLE_SHA1"' >> $BASH_ENV
+      fi
+
+# This is used to determine what to use as the base comparison point for
+#   determining which services to deploy.
+# The logic is as follows:
+# - If we are on the master branch, the comparison is only the current commit.
+# - If we are not on master, the comparison is to the current state of the master branch.
+set_source_ref: &set_source_ref
+  run:
+    name: set source ref
+    command: |
+      if [[ "$CIRCLE_BRANCH" == "master" ]]; then
+        echo 'export SOURCE_REF=HEAD^' >> $BASH_ENV
+      else
+        # We have to use origin/master because the checkout routine in CircleCI
+        #   sets the local master to HEAD.
+        echo 'export SOURCE_REF=origin/master' >> $BASH_ENV
+      fi
+
 workflows:
   plan-and-deploy-terraform-infrastructure:
     jobs:
@@ -184,7 +214,3 @@ workflows:
       - run-tests:
           context:
             - devtest
-          filters:
-            branches:
-              only:
-                - main
